@@ -2,44 +2,210 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>3D 第一人称像素射击 · 换弹与手榴弹</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>3D 第一人称像素射击 · 手机适配版</title>
 <style>
-  body { margin: 0; overflow: hidden; background: #0e0e16; font-family: monospace; }
-  canvas { display: block; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; overflow: hidden; background: #0e0e16;
+    font-family: monospace; touch-action: none; overscroll-behavior: none;
+    -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none; -webkit-user-drag: none;
+    width: 100%; height: 100%; position: fixed; }
+  canvas { display: block; touch-action: none; }
 
-  /* ---------- HUD ---------- */
-  #hud { position: fixed; left: 22px; bottom: 22px; color: #fff; font-family: monospace; user-select: none; pointer-events: none; }
+  #hud { position: fixed; left: 22px; bottom: 22px; color: #fff; font-family: monospace;
+    pointer-events: none; z-index: 10; }
   #hpbar-bg { width: 260px; height: 24px; background: #000a; border: 2px solid #fff6; position: relative; }
   #hpbar { width: 100%; height: 100%; background: #4ddc64; transition: width .18s, background .18s; }
   #hptext { margin-top: 6px; font-size: 16px; text-shadow: 2px 2px 0 #000; }
 
-  #ammo { position: fixed; right: 26px; bottom: 22px; color: #fff; font-family: monospace; user-select: none; pointer-events: none; text-align: right; }
+  #ammo { position: fixed; right: 26px; bottom: 22px; color: #fff; font-family: monospace;
+    pointer-events: none; text-align: right; z-index: 10; }
   #mag { font-size: 44px; font-weight: bold; line-height: 1; text-shadow: 2px 2px 0 #000; }
   #mag.low { color: #ff5a5a; }
   #reserve { font-size: 20px; color: #cfcfcf; text-shadow: 2px 2px 0 #000; }
   #reload-hint { font-size: 14px; color: #ffd35a; margin-top: 2px; height: 18px; }
 
-  #grenade { position: fixed; right: 26px; bottom: 110px; color: #7dfa8a; font-family: monospace; font-size: 18px; user-select: none; pointer-events: none; text-shadow: 2px 2px 0 #000; }
+  #grenade { position: fixed; right: 26px; bottom: 110px; color: #7dfa8a; font-family: monospace;
+    font-size: 18px; pointer-events: none; text-shadow: 2px 2px 0 #000; z-index: 10; }
 
-  #kills { position: fixed; right: 26px; top: 20px; color: #fff; font-family: monospace; font-size: 16px; text-shadow: 2px 2px 0 #000; user-select: none; pointer-events: none; }
-  #timer { position: fixed; left: 26px; top: 20px; color: #9ab; font-family: monospace; font-size: 14px; user-select: none; pointer-events: none; text-shadow: 2px 2px 0 #000; }
+  #kills { position: fixed; right: 26px; top: 20px; color: #fff; font-family: monospace;
+    font-size: 16px; text-shadow: 2px 2px 0 #000; pointer-events: none; z-index: 10; }
+  #timer { position: fixed; left: 26px; top: 20px; color: #9ab; font-family: monospace;
+    font-size: 14px; pointer-events: none; text-shadow: 2px 2px 0 #000; z-index: 10; }
 
-  #hurt { position: fixed; inset: 0; background: #f00; opacity: 0; pointer-events: none; transition: opacity .35s; }
-  #flash { position: fixed; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+  #hurt { position: fixed; inset: 0; background: #f00; opacity: 0; pointer-events: none;
+    transition: opacity .35s; z-index: 5; }
+  #flash { position: fixed; inset: 0; background: #fff; opacity: 0; pointer-events: none; z-index: 5; }
 
-  #crosshair { position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%); pointer-events: none; }
+  #crosshair { position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%);
+    pointer-events: none; z-index: 8; }
   #crosshair::before, #crosshair::after { content:''; position:absolute; background:#fff8; }
   #crosshair::before { width: 20px; height: 2px; left: -10px; top: -1px; }
   #crosshair::after { width: 2px; height: 20px; left: -1px; top: -10px; }
 
-  #gameover { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; flex-direction: column; color: #ff4444; font-family: monospace; background: #000b; }
+  #gameover { position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
+    flex-direction: column; color: #ff4444; font-family: monospace; background: #000b; z-index: 100; }
   #gameover h1 { font-size: 46px; margin: 0 0 12px; text-shadow: 3px 3px 0 #300; }
   #gameover p { color: #fff; font-size: 18px; }
 
-  #info { position: fixed; left: 26px; top: 46px; color: #667; font-family: monospace; font-size: 12px; user-select: none; pointer-events: none; line-height: 1.6; }
+  #info { position: fixed; left: 26px; top: 46px; color: #667; font-family: monospace;
+    font-size: 12px; pointer-events: none; line-height: 1.6; z-index: 10; }
+
+  /* ============ 手机控制 ============ */
+  #mobile-controls {
+    display: none;
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 50;
+  }
+  body.touch-device #mobile-controls { display: block; }
+  #mobile-controls > * { pointer-events: auto; }
+
+  #joystick-base {
+    position: fixed;
+    left: 24px; bottom: 30px;
+    width: 150px; height: 150px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(120,180,255,0.12) 0%, rgba(120,180,255,0.04) 70%, transparent 100%);
+    border: 2px solid rgba(150,200,255,0.4);
+    box-shadow: 0 0 24px rgba(100,160,255,0.22), inset 0 0 20px rgba(100,160,255,0.08);
+    touch-action: none;
+  }
+  #joystick-knob {
+    position: absolute; left: 50%; top: 50%;
+    width: 66px; height: 66px; border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, rgba(180,220,255,0.85), rgba(90,140,220,0.65));
+    border: 2px solid rgba(220,240,255,0.85);
+    transform: translate(-50%,-50%);
+    pointer-events: none;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5), 0 0 22px rgba(120,180,255,0.55);
+  }
+
+  .ctrl-btn {
+    position: fixed;
+    width: 78px; height: 78px; border-radius: 50%;
+    background: rgba(40,45,70,0.7);
+    border: 2px solid rgba(180,200,255,0.55);
+    color: #fff; font-family: monospace; font-size: 14px; font-weight: bold;
+    display: flex; align-items: center; justify-content: center; text-align: center;
+    touch-action: none; text-shadow: 1px 1px 3px #000; line-height: 1.15;
+    padding: 4px;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.45), inset 0 0 12px rgba(120,160,255,0.12);
+    transition: transform .08s, background .08s;
+  }
+  .ctrl-btn.pressed { transform: scale(0.92); background: rgba(90,120,200,0.75); }
+
+  #btn-shoot {
+    right: 26px; bottom: 30px;
+    width: 105px; height: 105px; font-size: 18px;
+    background: radial-gradient(circle at 35% 30%, rgba(255,120,120,0.5), rgba(180,30,30,0.7));
+    border-color: rgba(255,140,140,0.8);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5), 0 0 26px rgba(255,80,80,0.4), inset 0 0 16px rgba(255,120,120,0.25);
+  }
+  #btn-shoot.pressed { background: radial-gradient(circle at 35% 30%, rgba(255,160,160,0.8), rgba(220,40,40,0.9)); }
+
+  #btn-jump {
+    right: 32px; bottom: 156px;
+    background: radial-gradient(circle at 35% 30%, rgba(150,220,255,0.35), rgba(30,90,160,0.7));
+    border-color: rgba(160,220,255,0.7);
+  }
+  #btn-reload {
+    right: 152px; bottom: 32px;
+    background: radial-gradient(circle at 35% 30%, rgba(255,220,120,0.35), rgba(150,110,20,0.7));
+    border-color: rgba(255,220,120,0.75);
+  }
+  #btn-grenade {
+    right: 156px; bottom: 156px;
+    background: radial-gradient(circle at 35% 30%, rgba(150,255,170,0.35), rgba(30,130,60,0.7));
+    border-color: rgba(150,255,170,0.7);
+  }
+
+  body.touch-device #info { display: none; }
+  body.touch-device #hud { left: 16px; top: 16px; bottom: auto; }
+  body.touch-device #hpbar-bg { width: 170px; height: 16px; }
+  body.touch-device #hptext { font-size: 13px; margin-top: 4px; }
+  body.touch-device #kills { left: 16px; top: 58px; right: auto; font-size: 13px; }
+  body.touch-device #timer { left: 16px; top: 82px; font-size: 11px; }
+  body.touch-device #ammo { right: 16px; top: 16px; bottom: auto; }
+  body.touch-device #mag { font-size: 30px; }
+  body.touch-device #reserve { font-size: 14px; }
+  body.touch-device #reload-hint { font-size: 12px; height: 16px; }
+  body.touch-device #grenade { right: 16px; top: 88px; bottom: auto; font-size: 14px; }
+  body.touch-device #crosshair::before { width: 26px; height: 2px; left: -13px; top: -1px; }
+  body.touch-device #crosshair::after { width: 2px; height: 26px; left: -1px; top: -13px; }
+
+  body.touch-device #joystick-base {
+    left: max(18px, env(safe-area-inset-left));
+    bottom: max(24px, env(safe-area-inset-bottom));
+  }
+  body.touch-device #btn-shoot {
+    right: max(20px, env(safe-area-inset-right));
+    bottom: max(24px, env(safe-area-inset-bottom));
+  }
+  body.touch-device #btn-jump {
+    right: max(24px, env(safe-area-inset-right));
+    bottom: calc(max(24px, env(safe-area-inset-bottom)) + 122px);
+  }
+  body.touch-device #btn-reload {
+    right: calc(max(20px, env(safe-area-inset-right)) + 122px);
+    bottom: max(24px, env(safe-area-inset-bottom));
+  }
+  body.touch-device #btn-grenade {
+    right: calc(max(20px, env(safe-area-inset-right)) + 126px);
+    bottom: calc(max(24px, env(safe-area-inset-bottom)) + 122px);
+  }
+
+  @media (max-width: 400px) {
+    body.touch-device #joystick-base { width: 130px; height: 130px; }
+    body.touch-device #joystick-knob { width: 58px; height: 58px; }
+    body.touch-device #btn-shoot { width: 92px; height: 92px; font-size: 16px; }
+    body.touch-device .ctrl-btn { width: 68px; height: 68px; font-size: 12px; }
+    body.touch-device #btn-jump {
+      bottom: calc(max(24px, env(safe-area-inset-bottom)) + 108px);
+    }
+    body.touch-device #btn-reload {
+      right: calc(max(20px, env(safe-area-inset-right)) + 108px);
+    }
+    body.touch-device #btn-grenade {
+      right: calc(max(20px, env(safe-area-inset-right)) + 112px);
+      bottom: calc(max(24px, env(safe-area-inset-bottom)) + 108px);
+    }
+  }
+
+  @media (orientation: landscape) and (max-height: 520px) {
+    body.touch-device #joystick-base {
+      width: 118px; height: 118px;
+      left: max(16px, env(safe-area-inset-left));
+      bottom: max(16px, env(safe-area-inset-bottom));
+    }
+    body.touch-device #joystick-knob { width: 52px; height: 52px; }
+    body.touch-device #btn-shoot {
+      width: 84px; height: 84px; font-size: 15px;
+      right: max(16px, env(safe-area-inset-right));
+      bottom: max(16px, env(safe-area-inset-bottom));
+    }
+    body.touch-device .ctrl-btn { width: 62px; height: 62px; font-size: 11px; }
+    body.touch-device #btn-jump {
+      right: max(18px, env(safe-area-inset-right));
+      bottom: calc(max(16px, env(safe-area-inset-bottom)) + 96px);
+    }
+    body.touch-device #btn-reload {
+      right: calc(max(16px, env(safe-area-inset-right)) + 100px);
+      bottom: max(16px, env(safe-area-inset-bottom));
+    }
+    body.touch-device #btn-grenade {
+      right: calc(max(16px, env(safe-area-inset-right)) + 104px);
+      bottom: calc(max(16px, env(safe-area-inset-bottom)) + 96px);
+    }
+  }
 </style>
 </head>
 <body>
+
 <div id="hud">
   <div id="hpbar-bg"><div id="hpbar"></div></div>
   <div id="hptext">HP 100%</div>
@@ -52,7 +218,6 @@
 </div>
 
 <div id="grenade">手榴弹 × 3</div>
-
 <div id="kills">击杀: 0</div>
 <div id="timer">下一波补给: 20s</div>
 
@@ -60,12 +225,50 @@
 <div id="flash"></div>
 <div id="crosshair"></div>
 
-<div id="gameover"><h1>你死了</h1><p>按 R 重新开始</p></div>
+<div id="gameover"><h1>你死了</h1><p id="gameover-tip">按 R 重新开始</p></div>
 
 <div id="info">
   WASD 移动 · 鼠标看 · 左键射击 · 空格跳跃<br>
   R 换弹 · G 投掷手榴弹
 </div>
+
+<div id="mobile-controls">
+  <div id="joystick-base"><div id="joystick-knob"></div></div>
+  <div id="btn-shoot" class="ctrl-btn">射击</div>
+  <div id="btn-jump" class="ctrl-btn">跳跃</div>
+  <div id="btn-reload" class="ctrl-btn">换弹</div>
+  <div id="btn-grenade" class="ctrl-btn">手雷</div>
+</div>
+
+<script>
+(function () {
+  function detectTouch() {
+    if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) return true;
+    if (window.matchMedia && window.matchMedia('(any-pointer: coarse)').matches) return true;
+    if ('ontouchstart' in window) return true;
+    if (navigator.maxTouchPoints > 0) return true;
+    if (navigator.msMaxTouchPoints > 0) return true;
+    if (location.search.indexOf('mobile=1') !== -1) return true;
+    return false;
+  }
+  const isTouch = detectTouch();
+  window.__IS_TOUCH__ = isTouch;
+
+  function applyTouchClass() {
+    if (!isTouch) return;
+    document.documentElement.classList.add('touch-device');
+    if (document.body) {
+      document.body.classList.add('touch-device');
+      const mc = document.getElementById('mobile-controls');
+      if (mc) mc.style.display = 'block';
+    } else {
+      document.addEventListener('DOMContentLoaded', applyTouchClass, { once: true });
+    }
+  }
+  applyTouchClass();
+  window.addEventListener('load', applyTouchClass);
+})();
+</script>
 
 <script type="importmap">
 { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
@@ -73,6 +276,14 @@
 
 <script type="module">
 import * as THREE from 'three';
+
+const isTouch = window.__IS_TOUCH__ === true;
+if (isTouch) {
+  document.documentElement.classList.add('touch-device');
+  document.body.classList.add('touch-device');
+  const mc = document.getElementById('mobile-controls');
+  if (mc) mc.style.display = 'block';
+}
 
 /* =========================================================
    1. 基础场景
@@ -89,7 +300,6 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 1));
 renderer.shadowMap.enabled = false;
 document.body.appendChild(renderer.domElement);
 
-/* ---------- 像素纹理生成 ---------- */
 function pixelTexture(color, size = 16, noise = 0.14) {
   const c = document.createElement('canvas');
   c.width = c.height = size;
@@ -108,17 +318,15 @@ function pixelTexture(color, size = 16, noise = 0.14) {
   return t;
 }
 
-/* ---------- 灯光 ---------- */
 scene.add(new THREE.AmbientLight(0xffffff, 0.8));
 const sun = new THREE.DirectionalLight(0xffffff, 0.85);
 sun.position.set(30, 70, 25);
 scene.add(sun);
 
 /* =========================================================
-   2. 世界 + 静态碰撞盒
+   2. 世界
    ========================================================= */
 const solids = [];
-
 function addSolid(mesh) {
   mesh.updateMatrixWorld(true);
   solids.push(new THREE.Box3().setFromObject(mesh));
@@ -126,7 +334,6 @@ function addSolid(mesh) {
   return mesh;
 }
 
-/* 地面 */
 const groundTex = pixelTexture('#2c3a2f', 32);
 groundTex.wrapS = groundTex.wrapT = THREE.RepeatWrapping;
 groundTex.repeat.set(70, 70);
@@ -137,7 +344,6 @@ const ground = new THREE.Mesh(
 ground.position.y = -0.5;
 scene.add(ground);
 
-/* 围墙 */
 const wallMat = new THREE.MeshLambertMaterial({ map: pixelTexture('#3b3b52') });
 const wallGeo = new THREE.BoxGeometry(1, 1, 1);
 [
@@ -152,7 +358,6 @@ const wallGeo = new THREE.BoxGeometry(1, 1, 1);
   addSolid(m);
 });
 
-/* 障碍方块 */
 const blockMats = [
   new THREE.MeshLambertMaterial({ map: pixelTexture('#47475f') }),
   new THREE.MeshLambertMaterial({ map: pixelTexture('#5b4a38') }),
@@ -184,47 +389,30 @@ const player = {
 };
 
 /* =========================================================
-   4. 枪械模型（挂在相机上）
+   4. 枪械模型
    ========================================================= */
 const gunGroup = new THREE.Group();
-
 const matMetal = new THREE.MeshLambertMaterial({ map: pixelTexture('#54546f') });
 const matDark  = new THREE.MeshLambertMaterial({ map: pixelTexture('#26262f') });
 const matGrip  = new THREE.MeshLambertMaterial({ map: pixelTexture('#3a2f26') });
 const matAcc   = new THREE.MeshLambertMaterial({ map: pixelTexture('#8a6a3a') });
 
 const body = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.16, 0.62), matMetal);
-body.position.set(0, 0, -0.12);
-gunGroup.add(body);
-
+body.position.set(0, 0, -0.12); gunGroup.add(body);
 const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.075, 0.42), matDark);
-barrel.position.set(0, 0.025, -0.6);
-gunGroup.add(barrel);
-
+barrel.position.set(0, 0.025, -0.6); gunGroup.add(barrel);
 const muzzle = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.11, 0.09), matDark);
-muzzle.position.set(0, 0.025, -0.83);
-gunGroup.add(muzzle);
-
+muzzle.position.set(0, 0.025, -0.83); gunGroup.add(muzzle);
 const grip = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.24, 0.13), matGrip);
-grip.position.set(0, -0.18, 0.06);
-grip.rotation.x = 0.18;
-gunGroup.add(grip);
-
+grip.position.set(0, -0.18, 0.06); grip.rotation.x = 0.18; gunGroup.add(grip);
 const magMesh = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.28, 0.11), matAcc);
-magMesh.position.set(0, -0.2, -0.16);
-magMesh.rotation.x = -0.08;
-gunGroup.add(magMesh);
-
+magMesh.position.set(0, -0.2, -0.16); magMesh.rotation.x = -0.08; gunGroup.add(magMesh);
 const sightRear = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.05), matDark);
-sightRear.position.set(0, 0.1, 0.08);
-gunGroup.add(sightRear);
+sightRear.position.set(0, 0.1, 0.08); gunGroup.add(sightRear);
 const sightFront = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.06, 0.03), matDark);
-sightFront.position.set(0, 0.1, -0.7);
-gunGroup.add(sightFront);
-
+sightFront.position.set(0, 0.1, -0.7); gunGroup.add(sightFront);
 const stock = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.13, 0.28), matGrip);
-stock.position.set(0, -0.02, 0.3);
-gunGroup.add(stock);
+stock.position.set(0, -0.02, 0.3); gunGroup.add(stock);
 
 const muzzleFlash = new THREE.Mesh(
   new THREE.BoxGeometry(0.22, 0.22, 0.22),
@@ -239,54 +427,36 @@ gunGroup.position.copy(GUN_REST);
 gunGroup.traverse(o => { o.frustumCulled = false; });
 camera.add(gunGroup);
 
-/* ============ 投掷手臂（挂在相机上，平时隐藏） ============ */
 const throwArm = new THREE.Group();
 const skinMatArm = new THREE.MeshLambertMaterial({ map: pixelTexture('#e8c19a') });
-
 const forearm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.42), skinMatArm);
-forearm.position.set(0, 0, -0.2);
-throwArm.add(forearm);
-
+forearm.position.set(0, 0, -0.2); throwArm.add(forearm);
 const handMesh = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, 0.16), skinMatArm);
-handMesh.position.set(0, 0, -0.42);
-throwArm.add(handMesh);
-
+handMesh.position.set(0, 0, -0.42); throwArm.add(handMesh);
 const heldGrenade = new THREE.Mesh(
   new THREE.SphereGeometry(0.11, 8, 6),
   new THREE.MeshLambertMaterial({ map: pixelTexture('#3f7a3a') })
 );
-heldGrenade.position.set(0, 0.02, -0.5);
-throwArm.add(heldGrenade);
-
+heldGrenade.position.set(0, 0.02, -0.5); throwArm.add(heldGrenade);
 const ARM_HIDDEN = new THREE.Vector3(0.62, -0.75, -0.5);
 throwArm.position.copy(ARM_HIDDEN);
 throwArm.rotation.x = 0.3;
 throwArm.visible = false;
 throwArm.traverse(o => { o.frustumCulled = false; });
 camera.add(throwArm);
-
 scene.add(camera);
 
 /* =========================================================
    5. 武器状态
    ========================================================= */
 const weapon = {
-  magSize: 30,
-  mag: 30,
-  reserve: 100,
-  reserveMax: 100,
-  reloading: false,
-  reloadTime: 1.9,
-  reloadStart: 0,
-  reloadEnd: 0,
-  fireRate: 0.11,
-  lastShot: 0,
-  damage: 25,
+  magSize: 30, mag: 30, reserve: 100, reserveMax: 100,
+  reloading: false, reloadTime: 1.9, reloadStart: 0, reloadEnd: 0,
+  fireRate: 0.11, lastShot: 0, damage: 25,
 };
 let grenades = 3;
 const GRENADE_MAX = 6;
 
-/* ---------- UI 引用 ---------- */
 const hpbar    = document.getElementById('hpbar');
 const hptext   = document.getElementById('hptext');
 const magEl    = document.getElementById('mag');
@@ -308,13 +478,11 @@ function updateHpUI() {
   hpbar.style.background = pct > 0.6 ? '#4ddc64' : (pct > 0.3 ? '#e8c83c' : '#e64646');
   hptext.textContent = 'HP ' + Math.max(0, Math.round(player.hp)) + '%';
 }
-
 function updateAmmoUI() {
   magEl.textContent = weapon.mag;
   magEl.classList.toggle('low', weapon.mag <= 5 && !weapon.reloading);
   reserveEl.textContent = '/ ' + weapon.reserve;
 }
-
 function updateGrenadeUI() {
   grenadeEl.textContent = '手榴弹 × ' + grenades;
 }
@@ -324,12 +492,10 @@ function updateGrenadeUI() {
    ========================================================= */
 const bullets = [];
 const enemyBullets = [];
-
 const bulletGeo = new THREE.BoxGeometry(0.09, 0.09, 0.09);
 const bulletMat = new THREE.MeshBasicMaterial({ color: 0xfff2a0 });
 const eBulletGeo = new THREE.BoxGeometry(0.14, 0.14, 0.14);
 const eBulletMat = new THREE.MeshBasicMaterial({ color: 0xff7030 });
-
 const sparkGeo = new THREE.BoxGeometry(0.16, 0.16, 0.16);
 
 function spawnSpark(pos, color = 0xffb020, size = 1) {
@@ -351,16 +517,13 @@ function spawnPlayerBullet() {
   gunGroup.updateWorldMatrix(true, false);
   const start = new THREE.Vector3(0, 0.025, -1.0);
   gunGroup.localToWorld(start);
-
   const mesh = new THREE.Mesh(bulletGeo, bulletMat);
   mesh.position.copy(start);
-
   const dir = new THREE.Vector3();
   camera.getWorldDirection(dir);
   dir.x += (Math.random() - 0.5) * 0.012;
   dir.y += (Math.random() - 0.5) * 0.012;
   dir.normalize();
-
   scene.add(mesh);
   bullets.push({ mesh, dir, speed: 110, life: 1.8 });
 }
@@ -369,13 +532,11 @@ function startReload() {
   if (weapon.reloading || gameOver) return;
   if (weapon.mag >= weapon.magSize) return;
   if (weapon.reserve <= 0) return;
-
   weapon.reloading = true;
   weapon.reloadStart = performance.now() / 1000;
   weapon.reloadEnd = weapon.reloadStart + weapon.reloadTime;
   reloadHint.textContent = '换弹中…';
 }
-
 function finishReload() {
   const need = weapon.magSize - weapon.mag;
   const take = Math.min(need, weapon.reserve);
@@ -388,7 +549,7 @@ function finishReload() {
 
 function tryShoot() {
   if (gameOver || weapon.reloading) return;
-  if (throwAnim.active) return;      // 投掷中不开枪
+  if (throwAnim.active) return;
   const now = performance.now() / 1000;
   if (now - weapon.lastShot < weapon.fireRate) return;
 
@@ -396,19 +557,14 @@ function tryShoot() {
     if (weapon.reserve > 0) startReload();
     return;
   }
-
   weapon.lastShot = now;
   weapon.mag--;
   updateAmmoUI();
-
   spawnPlayerBullet();
-
   muzzleFlash.visible = true;
   muzzleFlash.rotation.z = Math.random() * Math.PI;
   setTimeout(() => { muzzleFlash.visible = false; }, 45);
-
   recoil = 0.06;
-
   if (weapon.mag === 0 && weapon.reserve > 0) {
     setTimeout(() => { if (!weapon.reloading) startReload(); }, 180);
   }
@@ -419,7 +575,6 @@ function tryShoot() {
    ========================================================= */
 const enemies = [];
 const MAX_ENEMIES = 4;
-
 const TEX_SKIN  = pixelTexture('#e8c19a');
 const TEX_SHIRT = pixelTexture('#4b5f96');
 const TEX_PANTS = pixelTexture('#2d2d3c');
@@ -430,44 +585,25 @@ function buildHumanoid() {
   const shirtMat = new THREE.MeshLambertMaterial({ map: TEX_SHIRT });
   const pantsMat = new THREE.MeshLambertMaterial({ map: TEX_PANTS });
   const eyeMat   = new THREE.MeshBasicMaterial({ map: TEX_EYE });
-
   const g = new THREE.Group();
   const box = new THREE.BoxGeometry(1, 1, 1);
 
   const head = new THREE.Mesh(box, skinMat);
-  head.scale.set(0.34, 0.34, 0.34);
-  head.position.set(0, 1.66, 0);
-  g.add(head);
-
+  head.scale.set(0.34, 0.34, 0.34); head.position.set(0, 1.66, 0); g.add(head);
   [-0.08, 0.08].forEach(x => {
     const eye = new THREE.Mesh(box, eyeMat);
-    eye.scale.set(0.07, 0.07, 0.03);
-    eye.position.set(x, 1.70, 0.166);
-    g.add(eye);
+    eye.scale.set(0.07, 0.07, 0.03); eye.position.set(x, 1.70, 0.166); g.add(eye);
   });
-
   const torso = new THREE.Mesh(box, shirtMat);
-  torso.scale.set(0.52, 0.72, 0.28);
-  torso.position.set(0, 1.13, 0);
-  g.add(torso);
-
+  torso.scale.set(0.52, 0.72, 0.28); torso.position.set(0, 1.13, 0); g.add(torso);
   [-1, 1].forEach(s => {
     const arm = new THREE.Mesh(box, shirtMat);
-    arm.scale.set(0.15, 0.62, 0.15);
-    arm.position.set(0.34 * s, 1.13, 0);
-    g.add(arm);
-
+    arm.scale.set(0.15, 0.62, 0.15); arm.position.set(0.34 * s, 1.13, 0); g.add(arm);
     const hand = new THREE.Mesh(box, skinMat);
-    hand.scale.set(0.15, 0.15, 0.15);
-    hand.position.set(0.34 * s, 0.78, 0);
-    g.add(hand);
-
+    hand.scale.set(0.15, 0.15, 0.15); hand.position.set(0.34 * s, 0.78, 0); g.add(hand);
     const leg = new THREE.Mesh(box, pantsMat);
-    leg.scale.set(0.19, 0.78, 0.19);
-    leg.position.set(0.14 * s, 0.39, 0);
-    g.add(leg);
+    leg.scale.set(0.19, 0.78, 0.19); leg.position.set(0.14 * s, 0.39, 0); g.add(leg);
   });
-
   return g;
 }
 
@@ -476,36 +612,23 @@ function spawnEnemy() {
   do {
     const a = Math.random() * Math.PI * 2;
     const d = 18 + Math.random() * 22;
-    x = Math.sin(a) * d;
-    z = Math.cos(a) * d;
-    tries++;
+    x = Math.sin(a) * d; z = Math.cos(a) * d; tries++;
   } while (Math.hypot(x - player.pos.x, z - player.pos.z) < 14 && tries < 80);
 
   const group = buildHumanoid();
   group.position.set(x, 0, z);
   scene.add(group);
-
   enemies.push({
-    group,
-    hp: 100,
-    alive: true,
-    speed: 2.1,
-    attackRange: 2.0,
-    shootInterval: 5.0,
-    nextShot: performance.now() / 1000 + 2.0 + Math.random() * 3,
-    flashTimer: 0,
-    walkPhase: Math.random() * 10,
+    group, hp: 100, alive: true, speed: 2.1, attackRange: 2.0,
+    shootInterval: 5.0, nextShot: performance.now() / 1000 + 2.0 + Math.random() * 3,
+    flashTimer: 0, walkPhase: Math.random() * 10,
   });
 }
-
 function setEnemyEmissive(e, hex) {
   e.group.traverse(o => {
-    if (o.isMesh && o.material && o.material.emissive) {
-      o.material.emissive.setHex(hex);
-    }
+    if (o.isMesh && o.material && o.material.emissive) o.material.emissive.setHex(hex);
   });
 }
-
 function damageEnemy(e, dmg) {
   if (!e.alive) return;
   e.hp -= dmg;
@@ -513,12 +636,10 @@ function damageEnemy(e, dmg) {
   e.flashTimer = 0.08;
   if (e.hp <= 0) killEnemy(e);
 }
-
 function killEnemy(e) {
   e.alive = false;
   kills++;
   killsEl.textContent = '击杀: ' + kills;
-
   const t0 = performance.now();
   const baseY = e.group.position.y;
   (function anim() {
@@ -536,32 +657,18 @@ function killEnemy(e) {
     }
   })();
 }
-
 function enemyShoot(e) {
-  const origin = new THREE.Vector3(
-    e.group.position.x,
-    e.group.position.y + 1.25,
-    e.group.position.z
-  );
-
-  const target = new THREE.Vector3(
-    player.pos.x,
-    player.pos.y - 0.35,
-    player.pos.z
-  );
-
+  const origin = new THREE.Vector3(e.group.position.x, e.group.position.y + 1.25, e.group.position.z);
+  const target = new THREE.Vector3(player.pos.x, player.pos.y - 0.35, player.pos.z);
   const dir = target.sub(origin).normalize();
   dir.x += (Math.random() - 0.5) * 0.09;
   dir.y += (Math.random() - 0.5) * 0.06;
   dir.z += (Math.random() - 0.5) * 0.09;
   dir.normalize();
-
   const mesh = new THREE.Mesh(eBulletGeo, eBulletMat);
   mesh.position.copy(origin);
   scene.add(mesh);
-
   enemyBullets.push({ mesh, dir, speed: 32, life: 3.0 });
-
   const flash = new THREE.Mesh(
     new THREE.BoxGeometry(0.3, 0.3, 0.3),
     new THREE.MeshBasicMaterial({ color: 0xffaa44, transparent: true })
@@ -577,63 +684,41 @@ function enemyShoot(e) {
 const grenadeProjectiles = [];
 const grenadeGeo = new THREE.SphereGeometry(0.13, 8, 6);
 const grenadeMat = new THREE.MeshLambertMaterial({ map: pixelTexture('#3f7a3a') });
+const throwAnim = { active: false, startTime: 0, duration: 0.55, spawned: false };
 
-/* 投掷动画状态 */
-const throwAnim = {
-  active: false,
-  startTime: 0,
-  duration: 0.55,
-  spawned: false,
-};
-
-/* 真正生出手榴弹飞行物（在挥臂中段调用） */
 function spawnGrenadeProjectile() {
   const start = new THREE.Vector3(0.35, -0.3, -1.0);
   camera.localToWorld(start);
-
   const mesh = new THREE.Mesh(grenadeGeo, grenadeMat);
   mesh.position.copy(start);
   scene.add(mesh);
-
   const dir = new THREE.Vector3();
   camera.getWorldDirection(dir);
-
   grenadeProjectiles.push({
     mesh,
     vel: dir.clone().multiplyScalar(19).add(new THREE.Vector3(0, 3.2, 0)),
     timer: 2.1,
     spin: new THREE.Vector3(
-      (Math.random() - 0.5) * 16,
-      (Math.random() - 0.5) * 16,
-      (Math.random() - 0.5) * 16
+      (Math.random() - 0.5) * 16, (Math.random() - 0.5) * 16, (Math.random() - 0.5) * 16
     ),
   });
 }
-
-/* 触发投掷（按 G） */
 function throwGrenade() {
   if (gameOver) return;
   if (grenades <= 0) return;
   if (throwAnim.active) return;
-
   grenades--;
   updateGrenadeUI();
-
   throwAnim.active = true;
   throwAnim.startTime = performance.now() / 1000;
   throwAnim.spawned = false;
-
   throwArm.visible = true;
   heldGrenade.visible = true;
   gunGroup.visible = false;
 }
-
-/* 更新投掷手臂动画 */
 function updateThrowAnimation(now) {
   if (!throwAnim.active) return;
-
   const t = (now - throwAnim.startTime) / throwAnim.duration;
-
   if (t >= 1) {
     throwAnim.active = false;
     throwArm.visible = false;
@@ -641,88 +726,56 @@ function updateThrowAnimation(now) {
     gunGroup.visible = true;
     return;
   }
-
   let x, y, z, rotX;
-
   if (t < 0.4) {
-    /* 阶段1：抬手蓄力 */
-    const p = t / 0.4;
-    const e = 1 - Math.pow(1 - p, 2);
-    x    = THREE.MathUtils.lerp(ARM_HIDDEN.x, 0.32, e);
-    y    = THREE.MathUtils.lerp(ARM_HIDDEN.y, -0.35, e);
-    z    = THREE.MathUtils.lerp(ARM_HIDDEN.z, -0.30, e);
+    const p = t / 0.4; const e = 1 - Math.pow(1 - p, 2);
+    x = THREE.MathUtils.lerp(ARM_HIDDEN.x, 0.32, e);
+    y = THREE.MathUtils.lerp(ARM_HIDDEN.y, -0.35, e);
+    z = THREE.MathUtils.lerp(ARM_HIDDEN.z, -0.30, e);
     rotX = THREE.MathUtils.lerp(0.3, -0.7, e);
   } else if (t < 0.55) {
-    /* 阶段2：挥臂投出 */
-    const p = (t - 0.4) / 0.15;
-    const e = p * p;
-    x    = THREE.MathUtils.lerp(0.32, 0.48, e);
-    y    = THREE.MathUtils.lerp(-0.35, -0.55, e);
-    z    = THREE.MathUtils.lerp(-0.30, -0.85, e);
+    const p = (t - 0.4) / 0.15; const e = p * p;
+    x = THREE.MathUtils.lerp(0.32, 0.48, e);
+    y = THREE.MathUtils.lerp(-0.35, -0.55, e);
+    z = THREE.MathUtils.lerp(-0.30, -0.85, e);
     rotX = THREE.MathUtils.lerp(-0.7, 0.6, e);
-
     if (!throwAnim.spawned && p > 0.4) {
       throwAnim.spawned = true;
       heldGrenade.visible = false;
       spawnGrenadeProjectile();
     }
   } else {
-    /* 阶段3：收回手臂 */
-    const p = (t - 0.55) / 0.45;
-    const e = p * p;
-    x    = THREE.MathUtils.lerp(0.48, ARM_HIDDEN.x, e);
-    y    = THREE.MathUtils.lerp(-0.55, ARM_HIDDEN.y, e);
-    z    = THREE.MathUtils.lerp(-0.85, ARM_HIDDEN.z, e);
+    const p = (t - 0.55) / 0.45; const e = p * p;
+    x = THREE.MathUtils.lerp(0.48, ARM_HIDDEN.x, e);
+    y = THREE.MathUtils.lerp(-0.55, ARM_HIDDEN.y, e);
+    z = THREE.MathUtils.lerp(-0.85, ARM_HIDDEN.z, e);
     rotX = THREE.MathUtils.lerp(0.6, 0.3, e);
   }
-
   throwArm.position.set(x, y, z);
   throwArm.rotation.x = rotX;
 }
-
-/* ---------- 爆炸 ---------- */
 function explode(pos) {
   const light = new THREE.PointLight(0xffbb44, 22, 30, 2);
-  light.position.copy(pos);
-  scene.add(light);
-
-  const ballMat = new THREE.MeshBasicMaterial({
-    color: 0xffdd66, transparent: true, opacity: 1, depthWrite: false
-  });
+  light.position.copy(pos); scene.add(light);
+  const ballMat = new THREE.MeshBasicMaterial({ color: 0xffdd66, transparent: true, opacity: 1, depthWrite: false });
   const ball = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), ballMat);
-  ball.position.copy(pos);
-  scene.add(ball);
-
-  const coreMat = new THREE.MeshBasicMaterial({
-    color: 0xffffff, transparent: true, opacity: 1, depthWrite: false
-  });
+  ball.position.copy(pos); scene.add(ball);
+  const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 1, depthWrite: false });
   const core = new THREE.Mesh(new THREE.SphereGeometry(0.6, 10, 8), coreMat);
-  core.position.copy(pos);
-  scene.add(core);
-
+  core.position.copy(pos); scene.add(core);
   const sparks = [];
   for (let i = 0; i < 26; i++) {
     const s = new THREE.Mesh(
       new THREE.BoxGeometry(0.18, 0.18, 0.18),
-      new THREE.MeshBasicMaterial({
-        color: [0xffd166, 0xff8a3d, 0xffef9e][i % 3],
-        transparent: true
-      })
+      new THREE.MeshBasicMaterial({ color: [0xffd166, 0xff8a3d, 0xffef9e][i % 3], transparent: true })
     );
     s.position.copy(pos);
     const d = new THREE.Vector3(
-      Math.random() - 0.5,
-      Math.random() * 0.9 + 0.15,
-      Math.random() - 0.5
+      Math.random() - 0.5, Math.random() * 0.9 + 0.15, Math.random() - 0.5
     ).normalize().multiplyScalar(7 + Math.random() * 13);
     scene.add(s);
-    sparks.push({
-      mesh: s,
-      vel: d,
-      rot: new THREE.Vector3(Math.random() * 10, Math.random() * 10, Math.random() * 10)
-    });
+    sparks.push({ mesh: s, vel: d, rot: new THREE.Vector3(Math.random() * 10, Math.random() * 10, Math.random() * 10) });
   }
-
   const t0 = performance.now();
   const DUR = 750;
   (function anim() {
@@ -731,23 +784,15 @@ function explode(pos) {
       scene.remove(ball); scene.remove(core); scene.remove(light);
       ball.geometry.dispose(); core.geometry.dispose();
       ballMat.dispose(); coreMat.dispose();
-      sparks.forEach(s => {
-        scene.remove(s.mesh);
-        s.mesh.geometry.dispose();
-        s.mesh.material.dispose();
-      });
+      sparks.forEach(s => { scene.remove(s.mesh); s.mesh.geometry.dispose(); s.mesh.material.dispose(); });
       return;
     }
     const e = 1 - Math.pow(1 - t, 2);
-
     ball.scale.setScalar(1 + e * 8.5);
     ballMat.opacity = 1 - e;
-
     core.scale.setScalar(1 + e * 4);
     coreMat.opacity = Math.max(0, 1 - t * 2.4);
-
     light.intensity = 22 * (1 - t) * (1 - t);
-
     const step = 1 / 60;
     sparks.forEach(s => {
       s.vel.y -= 32 * step;
@@ -759,7 +804,6 @@ function explode(pos) {
     });
     requestAnimationFrame(anim);
   })();
-
   const RADIUS = 7.5;
   [...enemies].forEach(e => {
     if (!e.alive) return;
@@ -769,11 +813,8 @@ function explode(pos) {
       damageEnemy(e, Math.max(10, dmg));
     }
   });
-
   const pd = player.pos.distanceTo(pos);
-  if (pd < RADIUS * 0.65) {
-    damagePlayer(25);
-  }
+  if (pd < RADIUS * 0.65) damagePlayer(25);
 }
 
 /* =========================================================
@@ -782,7 +823,6 @@ function explode(pos) {
 const pickups = [];
 const PICKUP_INTERVAL = 20;
 let pickupTimer = 0;
-
 const ammoBoxMat = new THREE.MeshLambertMaterial({ map: pixelTexture('#b8923c') });
 const ammoLidMat = new THREE.MeshLambertMaterial({ map: pixelTexture('#6b5426') });
 const pickupGrenadeMat = new THREE.MeshLambertMaterial({ map: pixelTexture('#3f7a3a') });
@@ -793,10 +833,7 @@ function spawnPickup(type) {
     x = (Math.random() - 0.5) * 100;
     z = (Math.random() - 0.5) * 100;
     tries++;
-  } while (
-    (Math.hypot(x, z) < 6 || Math.hypot(x - player.pos.x, z - player.pos.z) < 8) &&
-    tries < 80
-  );
+  } while ((Math.hypot(x, z) < 6 || Math.hypot(x - player.pos.x, z - player.pos.z) < 8) && tries < 80);
 
   let mesh;
   if (type === 'ammo') {
@@ -804,14 +841,12 @@ function spawnPickup(type) {
     const box = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.34, 0.42), ammoBoxMat);
     g.add(box);
     const lid = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.08, 0.46), ammoLidMat);
-    lid.position.y = 0.2;
-    g.add(lid);
+    lid.position.y = 0.2; g.add(lid);
     const stripe = new THREE.Mesh(
       new THREE.BoxGeometry(0.1, 0.36, 0.44),
       new THREE.MeshLambertMaterial({ color: 0xffe066 })
     );
-    stripe.position.x = 0.1;
-    g.add(stripe);
+    stripe.position.x = 0.1; g.add(stripe);
     mesh = g;
   } else {
     const g = new THREE.Group();
@@ -821,14 +856,11 @@ function spawnPickup(type) {
       new THREE.BoxGeometry(0.07, 0.22, 0.07),
       new THREE.MeshLambertMaterial({ color: 0x8a7a4a })
     );
-    handle.position.y = 0.22;
-    g.add(handle);
+    handle.position.y = 0.22; g.add(handle);
     mesh = g;
   }
-
   mesh.position.set(x, 0.45, z);
   scene.add(mesh);
-
   const beamMat = new THREE.MeshBasicMaterial({
     color: type === 'ammo' ? 0xffd25a : 0x6cf07a,
     transparent: true, opacity: 0.22, depthWrite: false
@@ -836,17 +868,8 @@ function spawnPickup(type) {
   const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 4, 8, 1, true), beamMat);
   beam.position.set(x, 2.2, z);
   scene.add(beam);
-
-  pickups.push({
-    mesh,
-    type,
-    baseY: 0.45,
-    phase: Math.random() * Math.PI * 2,
-    life: 60,
-    beam,
-  });
+  pickups.push({ mesh, type, baseY: 0.45, phase: Math.random() * Math.PI * 2, life: 60, beam });
 }
-
 function spawnRandomPickup() {
   spawnPickup(Math.random() < 0.6 ? 'ammo' : 'grenade');
 }
@@ -859,79 +882,71 @@ function damagePlayer(amount) {
   player.hp -= amount;
   if (player.hp < 0) player.hp = 0;
   updateHpUI();
-
   hurtEl.style.transition = 'none';
   hurtEl.style.opacity = '0.45';
   requestAnimationFrame(() => {
     hurtEl.style.transition = 'opacity .38s';
     hurtEl.style.opacity = '0';
   });
-
   if (player.hp <= 0) triggerGameOver();
 }
-
 function triggerGameOver() {
   gameOver = true;
+  document.getElementById('gameover-tip').textContent = isTouch ? '点击屏幕重新开始' : '按 R 重新开始';
   gameoverEl.style.display = 'flex';
   if (document.pointerLockElement) document.exitPointerLock();
+  mouseDown = false;
 }
-
 function resetGame() {
   gameOver = false;
   gameoverEl.style.display = 'none';
-
   player.hp = 100;
   player.pos.set(0, 1.7, 0);
   player.vel.set(0, 0, 0);
   player.yaw = 0;
   player.pitch = 0;
   updateHpUI();
-
   weapon.mag = weapon.magSize;
   weapon.reserve = weapon.reserveMax;
   weapon.reloading = false;
   reloadHint.textContent = '';
   updateAmmoUI();
-
   grenades = 3;
   updateGrenadeUI();
-
   throwAnim.active = false;
   throwArm.visible = false;
   heldGrenade.visible = true;
   gunGroup.visible = true;
-
   kills = 0;
   killsEl.textContent = '击杀: 0';
-
   [...enemies].forEach(e => scene.remove(e.group));
   enemies.length = 0;
-
   bullets.forEach(b => scene.remove(b.mesh)); bullets.length = 0;
   enemyBullets.forEach(b => scene.remove(b.mesh)); enemyBullets.length = 0;
   grenadeProjectiles.forEach(g => scene.remove(g.mesh)); grenadeProjectiles.length = 0;
   pickups.forEach(p => { scene.remove(p.mesh); if (p.beam) scene.remove(p.beam); });
   pickups.length = 0;
-
   pickupTimer = 0;
-
+  touchState.moveInputX = 0;
+  touchState.moveInputY = 0;
+  if (joyKnob) joyKnob.style.transform = 'translate(-50%, -50%)';
+  lookPointerId = null;
+  joyPointerId = null;
+  shootPointerId = null;
+  mouseDown = false;
   for (let i = 0; i < MAX_ENEMIES; i++) spawnEnemy();
   spawnPickup('ammo');
   spawnPickup('grenade');
-
-  renderer.domElement.requestPointerLock();
+  if (!isTouch) renderer.domElement.requestPointerLock();
 }
 
 /* =========================================================
-   11. 输入
+   11. 键盘鼠标（桌面端）
    ========================================================= */
 const keys = {};
 addEventListener('keydown', e => {
   keys[e.code] = true;
-  if (e.code === 'KeyR') {
-    if (gameOver) resetGame();
-    else startReload();
-  }
+  if (e.code === 'KeyR') { if (gameOver) resetGame(); else startReload(); }
   if (e.code === 'KeyG') throwGrenade();
   if (e.code === 'Space') e.preventDefault();
 });
@@ -939,25 +954,254 @@ addEventListener('keyup', e => { keys[e.code] = false; });
 
 let mouseDown = false;
 renderer.domElement.addEventListener('click', () => {
-  if (!gameOver && !document.pointerLockElement) {
+  if (!gameOver && !isTouch && !document.pointerLockElement) {
     renderer.domElement.requestPointerLock();
   }
 });
-document.addEventListener('mousedown', e => { if (e.button === 0) mouseDown = true; });
-document.addEventListener('mouseup',   e => { if (e.button === 0) mouseDown = false; });
+document.addEventListener('mousedown', e => {
+  if (isTouch) return;
+  if (e.button === 0) mouseDown = true;
+});
+document.addEventListener('mouseup', e => {
+  if (isTouch) return;
+  if (e.button === 0) mouseDown = false;
+});
 addEventListener('blur', () => { mouseDown = false; });
 
 document.addEventListener('mousemove', e => {
   if (document.pointerLockElement !== renderer.domElement) return;
   const s = 0.0022;
-  player.yaw   -= e.movementX * s;
+  player.yaw -= e.movementX * s;
   player.pitch -= e.movementY * s;
   const lim = Math.PI / 2 - 0.02;
   player.pitch = Math.max(-lim, Math.min(lim, player.pitch));
 });
 
 /* =========================================================
-   12. 更新逻辑
+   12. 触摸控制
+   ========================================================= */
+const touchState = { moveInputX: 0, moveInputY: 0 };
+
+let joyPointerId = null;
+let lookPointerId = null;
+let shootPointerId = null;
+let lookLastX = 0;
+let lookLastY = 0;
+
+const joyBase   = document.getElementById('joystick-base');
+const joyKnob   = document.getElementById('joystick-knob');
+const btnShoot  = document.getElementById('btn-shoot');
+const btnJump   = document.getElementById('btn-jump');
+const btnReload = document.getElementById('btn-reload');
+const btnGrenade= document.getElementById('btn-grenade');
+
+const TOUCH_LOOK_SENS = 0.006;
+
+function updateJoyVisual(tx, ty) {
+  const r = joyBase.getBoundingClientRect();
+  if (!r.width || !r.height) return;
+  const cx = r.left + r.width / 2;
+  const cy = r.top + r.height / 2;
+  const maxDist = r.width / 2 - 33;
+
+  let dx = tx - cx;
+  let dy = ty - cy;
+  const dist = Math.hypot(dx, dy);
+  if (dist > maxDist) {
+    dx = dx / dist * maxDist;
+    dy = dy / dist * maxDist;
+  }
+  joyKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+  touchState.moveInputX = dx / maxDist;
+  touchState.moveInputY = -dy / maxDist;
+}
+function resetJoy() {
+  joyPointerId = null;
+  touchState.moveInputX = 0;
+  touchState.moveInputY = 0;
+  if (joyKnob) joyKnob.style.transform = 'translate(-50%, -50%)';
+}
+
+/* 通用按钮绑定（除射击外都用它） */
+function bindButton(el, { onDown, onUp, onMove, capture = true } = {}) {
+  if (!el) return;
+  el.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'mouse') return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (capture) {
+      try { el.setPointerCapture(e.pointerId); } catch (err) {}
+    }
+    el.classList.add('pressed');
+    if (onDown) onDown(e);
+  }, { passive: false });
+  el.addEventListener('pointermove', e => {
+    if (e.pointerType === 'mouse') return;
+    if (!el.hasPointerCapture || !el.hasPointerCapture(e.pointerId)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (onMove) onMove(e);
+  }, { passive: false });
+  const release = e => {
+    if (e.pointerType === 'mouse') return;
+    e.preventDefault();
+    e.stopPropagation();
+    el.classList.remove('pressed');
+    if (onUp) onUp(e);
+  };
+  el.addEventListener('pointerup', release);
+  el.addEventListener('pointercancel', release);
+  el.addEventListener('lostpointercapture', release);
+}
+
+if (isTouch) {
+  /* ---------- 摇杆 ---------- */
+  joyBase.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'mouse') return;
+    e.preventDefault();
+    e.stopPropagation();
+    try { joyBase.setPointerCapture(e.pointerId); } catch (err) {}
+    joyPointerId = e.pointerId;
+    updateJoyVisual(e.clientX, e.clientY);
+  });
+  joyBase.addEventListener('pointermove', e => {
+    if (e.pointerType === 'mouse') return;
+    if (e.pointerId !== joyPointerId) return;
+    e.preventDefault();
+    e.stopPropagation();
+    updateJoyVisual(e.clientX, e.clientY);
+  });
+  const joyRelease = e => {
+    if (e.pointerType === 'mouse') return;
+    if (e.pointerId !== joyPointerId) return;
+    e.preventDefault();
+    e.stopPropagation();
+    try { joyBase.releasePointerCapture(e.pointerId); } catch (err) {}
+    resetJoy();
+  };
+  joyBase.addEventListener('pointerup', joyRelease);
+  joyBase.addEventListener('pointercancel', joyRelease);
+
+  /* ---------- 射击按钮（按住连发 + 滑动转向） ---------- */
+  /* 关键：不 setPointerCapture，把这个手指同时注册为视角指针 */
+  btnShoot.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'mouse') return;
+    e.preventDefault();
+    e.stopPropagation();
+    btnShoot.classList.add('pressed');
+    shootPointerId = e.pointerId;
+    mouseDown = true;
+
+    /* 让这个手指同时参与视角控制 */
+    if (lookPointerId === null) {
+      lookPointerId = e.pointerId;
+      lookLastX = e.clientX;
+      lookLastY = e.clientY;
+    }
+  }, { passive: false });
+
+  btnShoot.addEventListener('pointermove', e => {
+    if (e.pointerType === 'mouse') return;
+    if (e.pointerId !== shootPointerId) return;
+    /* 不 preventDefault，也不 stopPropagation，让事件继续传到 window 处理视角 */
+    if (lookPointerId === e.pointerId) {
+      const dx = e.clientX - lookLastX;
+      const dy = e.clientY - lookLastY;
+      lookLastX = e.clientX;
+      lookLastY = e.clientY;
+      player.yaw -= dx * TOUCH_LOOK_SENS;
+      player.pitch -= dy * TOUCH_LOOK_SENS;
+      const lim = Math.PI / 2 - 0.02;
+      player.pitch = Math.max(-lim, Math.min(lim, player.pitch));
+    }
+  }, { passive: false });
+
+  const shootRelease = e => {
+    if (e.pointerType === 'mouse') return;
+    if (e.pointerId !== shootPointerId) return;
+    e.preventDefault();
+    e.stopPropagation();
+    btnShoot.classList.remove('pressed');
+    shootPointerId = null;
+    mouseDown = false;
+    if (lookPointerId === e.pointerId) lookPointerId = null;
+  };
+  btnShoot.addEventListener('pointerup', shootRelease);
+  btnShoot.addEventListener('pointercancel', shootRelease);
+
+  /* ---------- 跳跃按钮 ---------- */
+  bindButton(btnJump, {
+    capture: false,
+    onDown: () => {
+      if (player.onGround && !gameOver) {
+        player.vel.y = 6.4;
+        player.onGround = false;
+      }
+    }
+  });
+
+  /* ---------- 换弹按钮 ---------- */
+  bindButton(btnReload, {
+    capture: false,
+    onDown: () => startReload()
+  });
+
+  /* ---------- 手雷按钮 ---------- */
+  bindButton(btnGrenade, {
+    capture: false,
+    onDown: () => throwGrenade()
+  });
+
+  /* ---------- 视角控制（画面空白区域起手） ---------- */
+  function isUIElement(el) {
+    return !!(el && el.closest && el.closest('#mobile-controls'));
+  }
+
+  window.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'mouse') return;
+    if (isUIElement(e.target)) return;
+    e.preventDefault();
+    if (lookPointerId === null) {
+      lookPointerId = e.pointerId;
+      lookLastX = e.clientX;
+      lookLastY = e.clientY;
+    }
+  }, { passive: false });
+
+  window.addEventListener('pointermove', e => {
+    if (e.pointerType === 'mouse') return;
+    if (e.pointerId !== lookPointerId) return;
+    /* 摇杆手指不参与视角；射击手指已在自己的 handler 里处理 */
+    if (e.pointerId === joyPointerId) return;
+    if (e.pointerId === shootPointerId) return; // 射击手指的转向在按钮上处理
+    e.preventDefault();
+    const dx = e.clientX - lookLastX;
+    const dy = e.clientY - lookLastY;
+    lookLastX = e.clientX;
+    lookLastY = e.clientY;
+    player.yaw -= dx * TOUCH_LOOK_SENS;
+    player.pitch -= dy * TOUCH_LOOK_SENS;
+    const lim = Math.PI / 2 - 0.02;
+    player.pitch = Math.max(-lim, Math.min(lim, player.pitch));
+  }, { passive: false });
+
+  function lookRelease(e) {
+    if (e.pointerType === 'mouse') return;
+    if (e.pointerId === lookPointerId) lookPointerId = null;
+  }
+  window.addEventListener('pointerup', lookRelease, { passive: false });
+  window.addEventListener('pointercancel', lookRelease, { passive: false });
+
+  /* ---------- 游戏结束点击屏幕重开 ---------- */
+  gameoverEl.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'mouse') return;
+    e.preventDefault();
+    if (gameOver) resetGame();
+  }, { passive: false });
+}
+
+/* =========================================================
+   13. 更新逻辑
    ========================================================= */
 let recoil = 0;
 const PLAYER_R = 0.42;
@@ -966,20 +1210,10 @@ function collideMove(delta) {
   ['x', 'z'].forEach(ax => {
     const before = player.pos[ax];
     player.pos[ax] += delta[ax];
-
     const pBox = new THREE.Box3(
-      new THREE.Vector3(
-        player.pos.x - PLAYER_R,
-        player.pos.y - player.height + 0.15,
-        player.pos.z - PLAYER_R
-      ),
-      new THREE.Vector3(
-        player.pos.x + PLAYER_R,
-        player.pos.y + 0.15,
-        player.pos.z + PLAYER_R
-      )
+      new THREE.Vector3(player.pos.x - PLAYER_R, player.pos.y - player.height + 0.15, player.pos.z - PLAYER_R),
+      new THREE.Vector3(player.pos.x + PLAYER_R, player.pos.y + 0.15, player.pos.z + PLAYER_R)
     );
-
     for (const s of solids) {
       if (pBox.intersectsBox(s)) { player.pos[ax] = before; break; }
     }
@@ -996,6 +1230,11 @@ function updatePlayer(dt, now) {
   if (keys['KeyS'] || keys['ArrowDown'])  move.sub(forward);
   if (keys['KeyD'] || keys['ArrowRight']) move.add(right);
   if (keys['KeyA'] || keys['ArrowLeft'])  move.sub(right);
+
+  if (Math.abs(touchState.moveInputX) > 0.05 || Math.abs(touchState.moveInputY) > 0.05) {
+    move.addScaledVector(right,   touchState.moveInputX);
+    move.addScaledVector(forward, touchState.moveInputY);
+  }
 
   const isMoving = move.lengthSq() > 0;
   if (isMoving) move.normalize().multiplyScalar(speed * dt);
@@ -1023,25 +1262,20 @@ function updatePlayer(dt, now) {
   camera.rotateY(player.yaw);
   camera.rotateX(player.pitch);
 
-  /* 枪械动画 */
   recoil *= Math.pow(0.0008, dt);
-
   let gunY = GUN_REST.y + recoil * 0.55;
   let gunZ = GUN_REST.z + recoil;
   let gunRotX = 0;
-
   if (weapon.reloading) {
     const p = Math.min(1, (now - weapon.reloadStart) / weapon.reloadTime);
     const dip = Math.sin(p * Math.PI);
     gunY -= dip * 0.3;
     gunRotX = dip * 0.85;
   }
-
   if (isMoving && player.onGround) {
     gunY += Math.sin(now * 11) * 0.014;
     gunZ += Math.cos(now * 11) * 0.008;
   }
-
   gunGroup.position.set(GUN_REST.x, gunY, gunZ);
   gunGroup.rotation.x = gunRotX;
 
@@ -1054,7 +1288,6 @@ function updatePlayerBullets(dt) {
   for (let i = bullets.length - 1; i >= 0; i--) {
     const b = bullets[i];
     b.life -= dt;
-
     const next = _tmpV.copy(b.mesh.position).addScaledVector(b.dir, b.speed * dt);
 
     let hitEnemy = null;
@@ -1063,12 +1296,8 @@ function updatePlayerBullets(dt) {
       const dx = next.x - e.group.position.x;
       const dz = next.z - e.group.position.z;
       const dy = next.y - e.group.position.y;
-      if (dx * dx + dz * dz < 0.45 * 0.45 && dy > -0.1 && dy < 1.95) {
-        hitEnemy = e;
-        break;
-      }
+      if (dx * dx + dz * dz < 0.45 * 0.45 && dy > -0.1 && dy < 1.95) { hitEnemy = e; break; }
     }
-
     if (hitEnemy) {
       damageEnemy(hitEnemy, weapon.damage);
       spawnSpark(next.clone(), 0xff4040, 1.2);
@@ -1076,7 +1305,6 @@ function updatePlayerBullets(dt) {
       bullets.splice(i, 1);
       continue;
     }
-
     const probe = new THREE.Box3(
       new THREE.Vector3(next.x - 0.05, next.y - 0.05, next.z - 0.05),
       new THREE.Vector3(next.x + 0.05, next.y + 0.05, next.z + 0.05)
@@ -1087,20 +1315,14 @@ function updatePlayerBullets(dt) {
         if (probe.intersectsBox(s)) { hitWorld = true; break; }
       }
     }
-
     if (hitWorld) {
       spawnSpark(next.clone(), 0xffcc66, 0.9);
       scene.remove(b.mesh);
       bullets.splice(i, 1);
       continue;
     }
-
     b.mesh.position.copy(next);
-
-    if (b.life <= 0) {
-      scene.remove(b.mesh);
-      bullets.splice(i, 1);
-    }
+    if (b.life <= 0) { scene.remove(b.mesh); bullets.splice(i, 1); }
   }
 }
 
@@ -1108,29 +1330,23 @@ function updateEnemyBullets(dt) {
   for (let i = enemyBullets.length - 1; i >= 0; i--) {
     const b = enemyBullets[i];
     b.life -= dt;
-
     const next = _tmpV.copy(b.mesh.position).addScaledVector(b.dir, b.speed * dt);
-
     const dx = next.x - player.pos.x;
     const dz = next.z - player.pos.z;
     const dy = next.y - player.pos.y;
-
     if (dx * dx + dz * dz < 0.5 * 0.5 && dy > -1.75 && dy < 0.4) {
       damagePlayer(25);
       spawnSpark(next.clone(), 0xff3030, 1.3);
-
       flashEl.style.transition = 'none';
       flashEl.style.opacity = '0.22';
       requestAnimationFrame(() => {
         flashEl.style.transition = 'opacity .22s';
         flashEl.style.opacity = '0';
       });
-
       scene.remove(b.mesh);
       enemyBullets.splice(i, 1);
       continue;
     }
-
     const probe = new THREE.Box3(
       new THREE.Vector3(next.x - 0.06, next.y - 0.06, next.z - 0.06),
       new THREE.Vector3(next.x + 0.06, next.y + 0.06, next.z + 0.06)
@@ -1141,38 +1357,28 @@ function updateEnemyBullets(dt) {
         if (probe.intersectsBox(s)) { hitWorld = true; break; }
       }
     }
-
     if (hitWorld) {
       spawnSpark(next.clone(), 0xff9040, 0.85);
       scene.remove(b.mesh);
       enemyBullets.splice(i, 1);
       continue;
     }
-
     b.mesh.position.copy(next);
-
-    if (b.life <= 0) {
-      scene.remove(b.mesh);
-      enemyBullets.splice(i, 1);
-    }
+    if (b.life <= 0) { scene.remove(b.mesh); enemyBullets.splice(i, 1); }
   }
 }
 
 function updateEnemies(dt, now) {
   for (const e of enemies) {
     if (!e.alive) continue;
-
     if (e.flashTimer > 0) {
       e.flashTimer -= dt;
       if (e.flashTimer <= 0) setEnemyEmissive(e, 0x000000);
     }
-
     const dx = player.pos.x - e.group.position.x;
     const dz = player.pos.z - e.group.position.z;
     const dist = Math.hypot(dx, dz);
-
     if (dist > 0.01) e.group.rotation.y = Math.atan2(dx, dz);
-
     if (dist > e.attackRange) {
       const nx = dx / dist, nz = dz / dist;
       e.group.position.x += nx * e.speed * dt;
@@ -1182,7 +1388,6 @@ function updateEnemies(dt, now) {
     } else {
       e.group.position.y = 0;
     }
-
     if (dist < 55 && now >= e.nextShot) {
       e.nextShot = now + e.shootInterval;
       enemyShoot(e);
@@ -1193,29 +1398,22 @@ function updateEnemies(dt, now) {
 function updateGrenades(dt, now) {
   for (let i = grenadeProjectiles.length - 1; i >= 0; i--) {
     const g = grenadeProjectiles[i];
-
     g.vel.y -= 24 * dt;
     g.mesh.position.addScaledVector(g.vel, dt);
-
     if (g.mesh.position.y < 0.14) {
       g.mesh.position.y = 0.14;
       g.vel.y = Math.abs(g.vel.y) * 0.42;
-      g.vel.x *= 0.7;
-      g.vel.z *= 0.7;
+      g.vel.x *= 0.7; g.vel.z *= 0.7;
       if (Math.abs(g.vel.y) < 0.6) g.vel.y = 0;
     }
-
     g.mesh.rotation.x += g.spin.x * dt;
     g.mesh.rotation.y += g.spin.y * dt;
     g.mesh.rotation.z += g.spin.z * dt;
-
     g.timer -= dt;
-
     if (g.timer < 0.7) {
       const on = Math.floor(now * 14) % 2 === 0;
       g.mesh.scale.setScalar(on ? 1.35 : 1.0);
     }
-
     if (g.timer <= 0) {
       explode(g.mesh.position.clone());
       scene.remove(g.mesh);
@@ -1228,32 +1426,19 @@ function updatePickups(dt, now) {
   for (let i = pickups.length - 1; i >= 0; i--) {
     const p = pickups[i];
     p.life -= dt;
-
     p.mesh.position.y = p.baseY + Math.sin(now * 2.2 + p.phase) * 0.12;
     p.mesh.rotation.y += dt * 1.6;
-
-    const d = Math.hypot(
-      p.mesh.position.x - player.pos.x,
-      p.mesh.position.z - player.pos.z
-    );
-
+    const d = Math.hypot(p.mesh.position.x - player.pos.x, p.mesh.position.z - player.pos.z);
     if (d < 1.6) {
       let taken = false;
-
       if (p.type === 'ammo') {
         if (weapon.reserve < weapon.reserveMax) {
           weapon.reserve = Math.min(weapon.reserveMax, weapon.reserve + 50);
-          updateAmmoUI();
-          taken = true;
+          updateAmmoUI(); taken = true;
         }
       } else {
-        if (grenades < GRENADE_MAX) {
-          grenades++;
-          updateGrenadeUI();
-          taken = true;
-        }
+        if (grenades < GRENADE_MAX) { grenades++; updateGrenadeUI(); taken = true; }
       }
-
       if (taken) {
         spawnSpark(p.mesh.position.clone(), p.type === 'ammo' ? 0xffd25a : 0x6cf07a, 1.1);
         scene.remove(p.mesh);
@@ -1262,7 +1447,6 @@ function updatePickups(dt, now) {
         continue;
       }
     }
-
     if (p.life <= 0) {
       scene.remove(p.mesh);
       if (p.beam) scene.remove(p.beam);
@@ -1275,7 +1459,6 @@ function updatePickupSpawn(dt) {
   pickupTimer += dt;
   const remain = Math.max(0, PICKUP_INTERVAL - pickupTimer);
   timerEl.textContent = '下一波补给: ' + Math.ceil(remain) + 's';
-
   if (pickupTimer >= PICKUP_INTERVAL) {
     pickupTimer = 0;
     spawnRandomPickup();
@@ -1283,18 +1466,16 @@ function updatePickupSpawn(dt) {
 }
 
 /* =========================================================
-   13. 主循环
+   14. 主循环
    ========================================================= */
 let last = performance.now();
 
 function loop() {
   requestAnimationFrame(loop);
-
   const nowMs = performance.now();
   let dt = (nowMs - last) / 1000;
   last = nowMs;
   dt = Math.min(dt, 0.05);
-
   const now = nowMs / 1000;
 
   if (!gameOver) {
@@ -1306,19 +1487,21 @@ function loop() {
     updateThrowAnimation(now);
     if (mouseDown) tryShoot();
   }
-
   updatePlayerBullets(dt);
   updateEnemyBullets(dt);
-
   renderer.render(scene, camera);
 }
 
 /* =========================================================
-   14. 初始化
+   15. 初始化
    ========================================================= */
 updateHpUI();
 updateAmmoUI();
 updateGrenadeUI();
+
+if (isTouch) {
+  document.getElementById('gameover-tip').textContent = '点击屏幕重新开始';
+}
 
 for (let i = 0; i < MAX_ENEMIES; i++) spawnEnemy();
 spawnPickup('ammo');
